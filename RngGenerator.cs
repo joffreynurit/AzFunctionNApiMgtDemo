@@ -14,7 +14,7 @@ namespace AzFuncNApiMgtDemo
     {
         [FunctionName("RngGenerator")]
         public static async Task<IActionResult> Run(
-            [HttpTrigger(AuthorizationLevel.Function, "post", Route = null)] HttpRequest req,
+            [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = null)] HttpRequest req,
             ILogger log)
         {
             try
@@ -26,7 +26,7 @@ namespace AzFuncNApiMgtDemo
 
                 int maxValue = data.MaxValue;
 
-                return new OkObjectResult(random.Next(maxValue+1));
+                return new OkObjectResult(random.Next(maxValue));
             }
             catch (Exception ex) { }
 
