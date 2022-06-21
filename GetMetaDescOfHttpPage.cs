@@ -45,8 +45,6 @@ namespace AzFuncNApiMgtDemo
                             var balise = metas.Where(el => el.GetAttribute("property") == "og:description" || el.GetAttribute("name") == "description").FirstOrDefault();
 
                             metaDesc = balise.GetAttribute("content");
-
-                            metaDesc = metaDesc;
                         }
                     }
                 }
