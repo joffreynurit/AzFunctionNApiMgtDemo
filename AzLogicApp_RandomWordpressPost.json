@@ -2,89 +2,35 @@
   "definition": {
     "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
     "actions": {
-      "Condition": {
-        "actions": {
-          "Set_variable": {
-            "inputs": {
-              "name": "SubstringDesc",
-              "value": "@{substring(body('GetMetaDescOfHttpPage'), 0, 180)}..."
-            },
-            "runAfter": {},
-            "type": "SetVariable"
-          }
-        },
-        "else": {
-          "actions": {
-            "Set_variable_2": {
-              "inputs": {
-                "name": "SubstringDesc",
-                "value": "@{body('GetMetaDescOfHttpPage')}"
-              },
-              "runAfter": {},
-              "type": "SetVariable"
-            }
-          }
-        },
-        "expression": {
-          "and": [
-            {
-              "greater": [
-                "@length(body('GetMetaDescOfHttpPage'))",
-                180
-              ]
-            }
-          ]
-        },
-        "runAfter": {
-          "SubStringDesc": [
-            "Succeeded"
-          ]
-        },
-        "type": "If"
-      },
-      "GetMetaDescOfHttpPage": {
-        "inputs": {
-          "body": "@variables('JsonUrl')",
-          "function": {
-            "id": "/subscriptions/b8c01488-2755-45c0-8bd5-493f691b6952/resourceGroups/adevopsjourney-rg/providers/Microsoft.Web/sites/JoffreyNurit-MyLibrary/functions/GetMetaDescOfHttpPage"
-          }
-        },
-        "runAfter": {
-          "JsonUrl": [
-            "Succeeded"
-          ]
-        },
-        "type": "Function"
-      },
-      "JsonRngGenerator": {
+      "Create_variable_JsonRngGenerator_and_assign_(easier_use_in_JSON_for_Az_Function)": {
         "inputs": {
           "variables": [
             {
               "name": "JsonRngGenerator",
               "type": "string",
-              "value": "{ 'MaxValue': '@{variables('MaxNumberFeedElements')}' }"
+              "value": "{ 'MaxValue': '@{length(body('List_all_RSS_feed_items'))}' }"
             }
           ]
         },
         "runAfter": {
-          "MaxNumberFeedElements": [
+          "List_all_RSS_feed_items": [
             "Succeeded"
           ]
         },
         "type": "InitializeVariable"
       },
-      "JsonUrl": {
+      "Create_variable_PostUrl_and_assign_(easier_use_in_twitter)": {
         "inputs": {
           "variables": [
             {
-              "name": "JsonUrl",
+              "name": "PostUrl",
               "type": "string",
-              "value": "{ 'URL' : '@{variables('PostUrl')}'}"
+              "value": "@{body('List_all_RSS_feed_items')?[body('RngGenerator')]['primaryLink']}"
             }
           ]
         },
         "runAfter": {
-          "PostUrl": [
+          "RngGenerator": [
             "Succeeded"
           ]
         },
@@ -103,79 +49,24 @@
             "feedUrl": "https://adevopsjourney.com/feed/"
           }
         },
-        "runAfter": {
-          "ScheduledPost": [
-            "Succeeded"
-          ]
-        },
+        "runAfter": {},
         "type": "ApiConnection"
-      },
-      "MaxNumberFeedElements": {
-        "inputs": {
-          "variables": [
-            {
-              "name": "MaxNumberFeedElements",
-              "type": "integer",
-              "value": "@length(body('List_all_RSS_feed_items'))"
-            }
-          ]
-        },
-        "runAfter": {
-          "List_all_RSS_feed_items": [
-            "Succeeded"
-          ]
-        },
-        "type": "InitializeVariable"
-      },
-      "PostToSharePosition": {
-        "inputs": {
-          "variables": [
-            {
-              "name": "PostToSharePosition",
-              "type": "integer",
-              "value": "@body('RngGenerator')"
-            }
-          ]
-        },
-        "runAfter": {
-          "RngGenerator": [
-            "Succeeded"
-          ]
-        },
-        "type": "InitializeVariable"
-      },
-      "PostUrl": {
-        "inputs": {
-          "variables": [
-            {
-              "name": "PostUrl",
-              "type": "string",
-              "value": "@{body('List_all_RSS_feed_items')?[variables('PostToSharePosition')]['primaryLink']}"
-            }
-          ]
-        },
-        "runAfter": {
-          "PostToSharePosition": [
-            "Succeeded"
-          ]
-        },
-        "type": "InitializeVariable"
       },
       "Post_a_tweet": {
         "inputs": {
           "host": {
             "connection": {
-              "name": "@parameters('$connections')['twitter']['connectionId']"
+              "name": "@parameters('$connections')['twitter_1']['connectionId']"
             }
           },
           "method": "post",
           "path": "/posttweet",
           "queries": {
-            "tweetText": "@{variables('SubstringDesc')} @{variables('PostUrl')}"
+            "tweetText": "⚡ Learning Tuesday ⚡\nChaque Mardi, un nouvel article pour éveiller la curiosité 💻\n@{variables('PostUrl')}"
           }
         },
         "runAfter": {
-          "Condition": [
+          "Create_variable_PostUrl_and_assign_(easier_use_in_twitter)": [
             "Succeeded"
           ]
         },
@@ -190,40 +81,11 @@
           "method": "POST"
         },
         "runAfter": {
-          "JsonRngGenerator": [
+          "Create_variable_JsonRngGenerator_and_assign_(easier_use_in_JSON_for_Az_Function)": [
             "Succeeded"
           ]
         },
         "type": "Function"
-      },
-      "ScheduledPost": {
-        "inputs": {
-          "variables": [
-            {
-              "name": "ScheduledPost",
-              "type": "integer"
-            }
-          ]
-        },
-        "runAfter": {},
-        "type": "InitializeVariable"
-      },
-      "SubStringDesc": {
-        "inputs": {
-          "variables": [
-            {
-              "name": "SubstringDesc",
-              "type": "string",
-              "value": " "
-            }
-          ]
-        },
-        "runAfter": {
-          "GetMetaDescOfHttpPage": [
-            "Succeeded"
-          ]
-        },
-        "type": "InitializeVariable"
       }
     },
     "contentVersion": "1.0.0.0",
@@ -237,12 +99,30 @@
     "triggers": {
       "Recurrence": {
         "evaluatedRecurrence": {
-          "frequency": "Hour",
-          "interval": 1
+          "frequency": "Week",
+          "interval": 1,
+          "schedule": {
+            "hours": [
+              "10"
+            ],
+            "weekDays": [
+              "Thursday"
+            ]
+          },
+          "timeZone": "Romance Standard Time"
         },
         "recurrence": {
-          "frequency": "Hour",
-          "interval": 1
+          "frequency": "Week",
+          "interval": 1,
+          "schedule": {
+            "hours": [
+              "10"
+            ],
+            "weekDays": [
+              "Thursday"
+            ]
+          },
+          "timeZone": "Romance Standard Time"
         },
         "type": "Recurrence"
       }
@@ -256,9 +136,9 @@
           "connectionName": "rss",
           "id": "/subscriptions/b8c01488-2755-45c0-8bd5-493f691b6952/providers/Microsoft.Web/locations/francecentral/managedApis/rss"
         },
-        "twitter": {
-          "connectionId": "/subscriptions/b8c01488-2755-45c0-8bd5-493f691b6952/resourceGroups/adevopsjourney-rg/providers/Microsoft.Web/connections/twitter",
-          "connectionName": "twitter",
+        "twitter_1": {
+          "connectionId": "/subscriptions/b8c01488-2755-45c0-8bd5-493f691b6952/resourceGroups/adevopsjourney-rg/providers/Microsoft.Web/connections/twitter-1",
+          "connectionName": "twitter-1",
           "id": "/subscriptions/b8c01488-2755-45c0-8bd5-493f691b6952/providers/Microsoft.Web/locations/francecentral/managedApis/twitter"
         }
       }
