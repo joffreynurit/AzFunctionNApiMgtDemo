@@ -1,0 +1,267 @@
+{
+  "definition": {
+    "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+    "actions": {
+      "Condition": {
+        "actions": {
+          "Set_variable": {
+            "inputs": {
+              "name": "SubstringDesc",
+              "value": "@{substring(body('GetMetaDescOfHttpPage'), 0, 180)}..."
+            },
+            "runAfter": {},
+            "type": "SetVariable"
+          }
+        },
+        "else": {
+          "actions": {
+            "Set_variable_2": {
+              "inputs": {
+                "name": "SubstringDesc",
+                "value": "@{body('GetMetaDescOfHttpPage')}"
+              },
+              "runAfter": {},
+              "type": "SetVariable"
+            }
+          }
+        },
+        "expression": {
+          "and": [
+            {
+              "greater": [
+                "@length(body('GetMetaDescOfHttpPage'))",
+                180
+              ]
+            }
+          ]
+        },
+        "runAfter": {
+          "SubStringDesc": [
+            "Succeeded"
+          ]
+        },
+        "type": "If"
+      },
+      "GetMetaDescOfHttpPage": {
+        "inputs": {
+          "body": "@variables('JsonUrl')",
+          "function": {
+            "id": "/subscriptions/b8c01488-2755-45c0-8bd5-493f691b6952/resourceGroups/adevopsjourney-rg/providers/Microsoft.Web/sites/JoffreyNurit-MyLibrary/functions/GetMetaDescOfHttpPage"
+          }
+        },
+        "runAfter": {
+          "JsonUrl": [
+            "Succeeded"
+          ]
+        },
+        "type": "Function"
+      },
+      "JsonRngGenerator": {
+        "inputs": {
+          "variables": [
+            {
+              "name": "JsonRngGenerator",
+              "type": "string",
+              "value": "{ 'MaxValue': '@{variables('MaxNumberFeedElements')}' }"
+            }
+          ]
+        },
+        "runAfter": {
+          "MaxNumberFeedElements": [
+            "Succeeded"
+          ]
+        },
+        "type": "InitializeVariable"
+      },
+      "JsonUrl": {
+        "inputs": {
+          "variables": [
+            {
+              "name": "JsonUrl",
+              "type": "string",
+              "value": "{ 'URL' : '@{variables('PostUrl')}'}"
+            }
+          ]
+        },
+        "runAfter": {
+          "PostUrl": [
+            "Succeeded"
+          ]
+        },
+        "type": "InitializeVariable"
+      },
+      "List_all_RSS_feed_items": {
+        "inputs": {
+          "host": {
+            "connection": {
+              "name": "@parameters('$connections')['rss']['connectionId']"
+            }
+          },
+          "method": "get",
+          "path": "/ListFeedItems",
+          "queries": {
+            "feedUrl": "https://adevopsjourney.com/feed/"
+          }
+        },
+        "runAfter": {
+          "ScheduledPost": [
+            "Succeeded"
+          ]
+        },
+        "type": "ApiConnection"
+      },
+      "MaxNumberFeedElements": {
+        "inputs": {
+          "variables": [
+            {
+              "name": "MaxNumberFeedElements",
+              "type": "integer",
+              "value": "@length(body('List_all_RSS_feed_items'))"
+            }
+          ]
+        },
+        "runAfter": {
+          "List_all_RSS_feed_items": [
+            "Succeeded"
+          ]
+        },
+        "type": "InitializeVariable"
+      },
+      "PostToSharePosition": {
+        "inputs": {
+          "variables": [
+            {
+              "name": "PostToSharePosition",
+              "type": "integer",
+              "value": "@body('RngGenerator')"
+            }
+          ]
+        },
+        "runAfter": {
+          "RngGenerator": [
+            "Succeeded"
+          ]
+        },
+        "type": "InitializeVariable"
+      },
+      "PostUrl": {
+        "inputs": {
+          "variables": [
+            {
+              "name": "PostUrl",
+              "type": "string",
+              "value": "@{body('List_all_RSS_feed_items')?[variables('PostToSharePosition')]['primaryLink']}"
+            }
+          ]
+        },
+        "runAfter": {
+          "PostToSharePosition": [
+            "Succeeded"
+          ]
+        },
+        "type": "InitializeVariable"
+      },
+      "Post_a_tweet": {
+        "inputs": {
+          "host": {
+            "connection": {
+              "name": "@parameters('$connections')['twitter']['connectionId']"
+            }
+          },
+          "method": "post",
+          "path": "/posttweet",
+          "queries": {
+            "tweetText": "@{variables('SubstringDesc')} @{variables('PostUrl')}"
+          }
+        },
+        "runAfter": {
+          "Condition": [
+            "Succeeded"
+          ]
+        },
+        "type": "ApiConnection"
+      },
+      "RngGenerator": {
+        "inputs": {
+          "body": "@variables('JsonRngGenerator')",
+          "function": {
+            "id": "/subscriptions/b8c01488-2755-45c0-8bd5-493f691b6952/resourceGroups/adevopsjourney-rg/providers/Microsoft.Web/sites/JoffreyNurit-MyLibrary/functions/RngGenerator"
+          },
+          "method": "POST"
+        },
+        "runAfter": {
+          "JsonRngGenerator": [
+            "Succeeded"
+          ]
+        },
+        "type": "Function"
+      },
+      "ScheduledPost": {
+        "inputs": {
+          "variables": [
+            {
+              "name": "ScheduledPost",
+              "type": "integer"
+            }
+          ]
+        },
+        "runAfter": {},
+        "type": "InitializeVariable"
+      },
+      "SubStringDesc": {
+        "inputs": {
+          "variables": [
+            {
+              "name": "SubstringDesc",
+              "type": "string",
+              "value": " "
+            }
+          ]
+        },
+        "runAfter": {
+          "GetMetaDescOfHttpPage": [
+            "Succeeded"
+          ]
+        },
+        "type": "InitializeVariable"
+      }
+    },
+    "contentVersion": "1.0.0.0",
+    "outputs": {},
+    "parameters": {
+      "$connections": {
+        "defaultValue": {},
+        "type": "Object"
+      }
+    },
+    "triggers": {
+      "Recurrence": {
+        "evaluatedRecurrence": {
+          "frequency": "Hour",
+          "interval": 1
+        },
+        "recurrence": {
+          "frequency": "Hour",
+          "interval": 1
+        },
+        "type": "Recurrence"
+      }
+    }
+  },
+  "parameters": {
+    "$connections": {
+      "value": {
+        "rss": {
+          "connectionId": "/subscriptions/b8c01488-2755-45c0-8bd5-493f691b6952/resourceGroups/adevopsjourney-rg/providers/Microsoft.Web/connections/rss",
+          "connectionName": "rss",
+          "id": "/subscriptions/b8c01488-2755-45c0-8bd5-493f691b6952/providers/Microsoft.Web/locations/francecentral/managedApis/rss"
+        },
+        "twitter": {
+          "connectionId": "/subscriptions/b8c01488-2755-45c0-8bd5-493f691b6952/resourceGroups/adevopsjourney-rg/providers/Microsoft.Web/connections/twitter",
+          "connectionName": "twitter",
+          "id": "/subscriptions/b8c01488-2755-45c0-8bd5-493f691b6952/providers/Microsoft.Web/locations/francecentral/managedApis/twitter"
+        }
+      }
+    }
+  }
+}
